@@ -2,4 +2,5 @@
 Достаточно запустить сервер и подключиться по адресу.
 
 **Запуск сервера**: uvicorn app.main:app --reload
-Демонстрация работы ![image](https://github.com/user-attachments/assets/b03657b3-5bd3-4261-b913-7676b11124b1)
+
+Демонстрация работы веб-приложения: ![image](https://github.com/user-attachments/assets/b03657b3-5bd3-4261-b913-7676b11124b1)
