@@ -1,15 +1,16 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 from app.websockets import router as websocket_router
-from app.database import init_db
 
 app = FastAPI()
 
-# Инициализация базы данных
-init_db()
+# Подключаем статику и шаблоны
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+templates = Jinja2Templates(directory="app/templates")
 
-# Подключаем WebSocket
 app.include_router(websocket_router)
 
 @app.get("/")
-def read_root():
-    return {"message": "Сервер мессенджера работает!"}
+def chat_page(request: Request):
+    return templates.TemplateResponse("chat.html", {"request": request})
