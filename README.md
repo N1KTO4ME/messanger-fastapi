@@ -3,4 +3,5 @@
 
 **Запуск сервера**: uvicorn app.main:app --reload
 
-Демонстрация работы веб-приложения: ![image](https://github.com/user-attachments/assets/b03657b3-5bd3-4261-b913-7676b11124b1)
+Демонстрация работы веб-приложения: ![{04B4E160-AAF2-4C92-A42E-C4C645D1E3F6}](https://github.com/user-attachments/assets/501ea2bc-7c9f-4c5f-aa11-784ccff0a54b)
+
