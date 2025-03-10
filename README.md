@@ -28,15 +28,15 @@
 ## Установка и запуск
 1. **Клонируем репозиторий**
    ```bash
-    git clone https://github.com/N1KTO4ME/messanger-fastapi.git
+   git clone -b master https://github.com/N1KTO4ME/messanger-fastapi.git
    ```
 2. **Устанавливаем зависимости**
    ```bash
-    pip install -r requirements.txt
+   pip install -r requirements.txt
    ```
 3. **Запускаем проект**
    ```bash
-    uvicorn app.main:app --reload
+   uvicorn app.main:app --reload
    ```
 ## Демострация работы веб-приложения
 ![{04B4E160-AAF2-4C92-A42E-C4C645D1E3F6}](https://github.com/user-attachments/assets/501ea2bc-7c9f-4c5f-aa11-784ccff0a54b)
