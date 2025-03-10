@@ -28,7 +28,7 @@
 ## Установка и запуск
 1. **Клонируем репозиторий**
    ```bash
-   https://github.com/N1KTO4ME/messanger-fastapi.git
+    git clone https://github.com/N1KTO4ME/messanger-fastapi.git
    ```
 2. **Устанавливаем зависимости**
    ```bash
