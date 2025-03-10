@@ -1,5 +1,3 @@
-![image](https://github.com/user-attachments/assets/7a8d609d-fdf1-4a00-9b73-2ecdc5200248)# Messenger на FastAPI с WebSocket и SQLite
-
 ##  Описание
 Этот проект — система обмена сообщениями на **FastAPI** с **WebSocket** и **SQLite**.  
 Поддерживает **общий чат** и **личные сообщения между пользователями**.
