@@ -121,3 +121,60 @@ header {
 button:hover {
     opacity: 0.8;
 }
+
+.main-container {
+    width: 80%;
+    max-width: 960px;
+    margin: 40px auto;
+    background-color: var(--chat-bg);
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.main-container h1,
+.main-container h2,
+.main-container h3,
+.main-container h4,
+.main-container h5,
+.main-container h6 {
+    color: var(--text-color);
+    margin-bottom: 15px;
+}
+
+.main-container p {
+    color: var(--text-color);
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+.main-container ul {
+    color: var(--text-color);
+    list-style-type: disc;
+    margin-left: 20px;
+    margin-bottom: 20px;
+}
+
+.main-container a {
+    color: var(--button-bg);
+    text-decoration: none;
+    transition: color 0.3s;
+}
+
+.main-container a:hover {
+    color: var(--button-text);
+}
+
+
+#theme-toggle {
+    background-color: var(--button-bg);
+    color: var(--button-text);
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+#theme-toggle:hover {
+    opacity: 0.8;
+}
