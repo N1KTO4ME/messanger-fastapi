@@ -1,56 +1,69 @@
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Text, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, Boolean, Text, DateTime
 from sqlalchemy.orm import sessionmaker, relationship, DeclarativeBase
 from datetime import datetime
 
-# Базовый класс для моделей SQLAlchemy
-class Base(DeclarativeBase):
-    pass
-
-# Подключение к базе данных SQLite
 DATABASE_URL = "sqlite:///./messenger.db"
 
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Модель пользователя
+
+class Base(DeclarativeBase):
+    pass
+
+
 class User(Base):
     __tablename__ = "users"
 
-    id = Column(Integer, primary_key=True, index=True)
-    username = Column(String, unique=True, index=True)
+    user_id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, nullable=False)
+    password = Column(String, nullable=False)
+    full_name = Column(String, nullable=False)
+    role = Column(String, nullable=False)  # студент, учитель, администратор
+    group = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     messages_sent = relationship("Message", back_populates="sender", cascade="all, delete-orphan")
+    chat_memberships = relationship("ChatMember", back_populates="user", cascade="all, delete-orphan")
 
 
-# Модель чата (диалога между двумя пользователями)
 class Chat(Base):
     __tablename__ = "chats"
 
-    id = Column(Integer, primary_key=True, index=True)
-    user1_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    user2_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    chat_id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=True)
+    is_group = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     messages = relationship("Message", back_populates="chat", cascade="all, delete-orphan")
+    members = relationship("ChatMember", back_populates="chat", cascade="all, delete-orphan")
 
 
-# Модель сообщения
+class ChatMember(Base):
+    __tablename__ = "chat_members"
+
+    id = Column(Integer, primary_key=True, index=True)
+    chat_id = Column(Integer, ForeignKey("chats.chat_id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    role_in_chat = Column(String, nullable=True)  # admin, member и т.д.
+    joined_at = Column(DateTime, default=datetime.utcnow)
+
+    chat = relationship("Chat", back_populates="members")
+    user = relationship("User", back_populates="chat_memberships")
+
+
 class Message(Base):
     __tablename__ = "messages"
 
-    id = Column(Integer, primary_key=True, index=True)
-    chat_id = Column(Integer, ForeignKey("chats.id"), nullable=False)
-    sender_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    message_id = Column(Integer, primary_key=True, index=True)
+    chat_id = Column(Integer, ForeignKey("chats.chat_id"), nullable=False)
+    sender_id = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
-    sender = relationship("User", back_populates="messages_sent")
     chat = relationship("Chat", back_populates="messages")
+    sender = relationship("User", back_populates="messages_sent")
 
 
-# Функция для создания таблиц в БД
 def init_db():
-    """Создаёт таблицы в БД, если их нет."""
     Base.metadata.create_all(bind=engine)
-
-# Вызываем создание таблиц
-init_db()

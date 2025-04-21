@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
-from app.database import SessionLocal, User
+from app.database1 import SessionLocal, User
 from app.schemas import UserResponse
 from typing import List
 

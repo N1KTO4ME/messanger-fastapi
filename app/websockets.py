@@ -1,12 +1,12 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException
 from sqlalchemy.orm import Session
-from app.database import SessionLocal, Chat, Message, User
+from app.database import SessionLocal, Chat, ChatMember, Message, User
 from typing import Dict
 
 router = APIRouter()
 
-# Активные соединения WebSocket
-active_connections: Dict[str, WebSocket] = {}
+active_connections: Dict[int, Dict[int, WebSocket]] = {}
+# active_connections[chat_id][user_id] = websocket
 
 
 def get_db():
@@ -17,73 +17,65 @@ def get_db():
         db.close()
 
 
-@router.websocket("/ws/{username}/{receiver}")
-async def websocket_endpoint(websocket: WebSocket, username: str, receiver: str, db: Session = Depends(get_db)):
+@router.websocket("/ws/{chat_id}/{user_id}")
+async def websocket_endpoint(
+    websocket: WebSocket,
+    chat_id: int,
+    user_id: int,
+    db: Session = Depends(get_db),
+):
+    # 1) Примем подключение
     await websocket.accept()
-    print(f"Запрос: username={username} ({type(username)}), receiver={receiver} ({type(receiver)})")
 
-    chat_key = f"{username}-{receiver}" if receiver != "global" else "global"
-    active_connections[chat_key] = websocket
-
-    print(f"Новое подключение: {username} -> {receiver}")
-
-    # Проверяем, существует ли пользователь
-    sender = db.query(User).filter(User.id == username).first()
-    recipient = db.query(User).filter(User.id == receiver).first() if receiver != "global" else None
-
-    if not sender:
-        await websocket.send_text("Ошибка: отправитель не найден")
+    # 2) Проверим, что чат существует
+    chat = db.query(Chat).filter_by(chat_id=chat_id).first()
+    if not chat:
+        await websocket.close(code=1008)
         return
 
-    if receiver != "global" and not recipient:
-        await websocket.send_text("Ошибка: получатель не найден")
+    # 3) Проверим, что пользователь есть и входит в чат
+    user = db.query(User).filter_by(user_id=user_id).first()
+    if not user:
+        await websocket.close(code=1008)
         return
 
-    # Определяем или создаем чат
-    if receiver == "global":
-        chat = None  # Глобальный чат без chat_id
-    else:
-        chat = db.query(Chat).filter(
-            ((Chat.user1_id == sender.id) & (Chat.user2_id == recipient.id)) |
-            ((Chat.user1_id == recipient.id) & (Chat.user2_id == sender.id))
-        ).first()
+    membership = (
+        db.query(ChatMember)
+        .filter_by(chat_id=chat_id, user_id=user_id)
+        .first()
+    )
+    if not membership:
+        # автоматически добавить в общий чат или запретить
+        await websocket.close(code=1008)
+        return
 
-        if not chat:
-            chat = Chat(user1_id=sender.id, user2_id=recipient.id)
-            db.add(chat)
-            db.commit()
+    # 4) Зарегистрируем соединение
+    active_connections.setdefault(chat_id, {})[user_id] = websocket
 
-
-    # Отправляем историю сообщений
-    chat_id = chat.id if chat else None
-    messages = db.query(Message).filter(Message.chat_id == chat_id).all()
-
-    for msg in messages:
-        sender_info = db.query(User).filter(User.id == msg.sender_id).first()
-        sender_name = sender_info.username if sender_info else "Неизвестный"
-        await websocket.send_text(f"{sender_name}: {msg.content}")
+    # 5) Отправим историю
+    msgs = (
+        db.query(Message)
+        .filter_by(chat_id=chat_id)
+        .order_by(Message.timestamp)
+        .all()
+    )
+    for m in msgs:
+        await websocket.send_text(f"{m.sender.full_name}: {m.content}")
 
     try:
         while True:
-            data = await websocket.receive_text()
-            print(f"Получено сообщение от {username}: {data}")
+            text = await websocket.receive_text()
 
-            new_message = Message(
-                chat_id=None if receiver == "global" else chat.id,
-                sender_id=None if receiver == "global" else sender.id,
-                content=data
-            )
-            db.add(new_message)
+            # 6) Сохраним в БД
+            msg = Message(chat_id=chat_id, sender_id=user_id, content=text)
+            db.add(msg)
             db.commit()
-            db.refresh(new_message)
+            db.refresh(msg)
 
-            print(f"Сообщение сохранено в БД: {new_message.id}, {new_message.content}")
-
-            for conn_key, conn in active_connections.items():
-                if conn_key == chat_key or conn_key == f"{receiver}-{username}":
-                    print(f"Отправка {username} -> {conn_key}: {data}")
-                    await conn.send_text(f"{username}: {data}")
+            # 7) Рассылим всем участникам чата
+            for uid, ws in active_connections[chat_id].items():
+                await ws.send_text(f"{user.full_name}: {text}")
 
     except WebSocketDisconnect:
-        print(f"Соединение закрыто: {username} -> {receiver}")
-        del active_connections[chat_key]
+        # удаляем сокет
+        active_connections[chat_id].pop(user_id, None)
